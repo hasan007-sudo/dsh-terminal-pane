@@ -10,7 +10,8 @@ An inline terminal panel docked under the composer of the [DeepSeek Harness](htt
 - Backs the panel with a genuine PTY (`node-pty`) spawned by the plugin — full TTY behaviour: colours, `vim`, `top`, job control, `Ctrl+C`.
 - Sessions are **persistent across commands**: `cd`, exported variables, and background processes survive between inputs, exactly like a normal terminal.
 - The shell is **lazy**: nothing spawns until you first expand the panel.
-- Rendering is line-oriented over the harness RPC channel, so the plugin needs no browser terminal emulator and adds no large client dependency.
+- Renders the PTY with xterm.js: type directly at the shell cursor, with ANSI colours, command history, tab completion, and terminal screen controls.
+- Includes terminal tabs with add, close, and collapse controls.
 
 ```
 ┌──────────────────────────────────────────┐
@@ -19,13 +20,12 @@ An inline terminal panel docked under the composer of the [DeepSeek Harness](htt
 ├──────────────────────────────────────────┤
 │  [model selector]            [send]      │
 ├──────────────────────────────────────────┤
-│  ▾ Terminal                              │  ← this plugin
+│  [>_ Personal ×]  +                  ▾  │  ← this plugin
 │  ┌────────────────────────────────────┐  │
 │  │ $ pwd                              │  │
 │  │ /Users/you/project                 │  │
 │  │ $ ▌                               │  │
 │  └────────────────────────────────────┘  │
-│  $ [ type a command            ready ]   │
 └──────────────────────────────────────────┘
 ```
 
@@ -42,15 +42,17 @@ Do not install this on a host whose browser session is reachable by untrusted pa
 
 ## Install
 
-From the DSH **Plugins** page: click **Add plugin**, enter `dsh-terminal-pane`, install, then enable it.
+Use the published [npm package](https://www.npmjs.com/package/dsh-terminal-pane) for normal installation. A local checkout or filesystem link is only needed for development.
+
+From the DSH **Plugins** page: click **Add plugin**, enter `dsh-terminal-pane@0.1.0`, install, then enable it.
 
 Or from the command line:
 
 ```sh
-dsh plugin --profile web add dsh-terminal-pane
+dsh plugin --profile web add dsh-terminal-pane@0.1.0
 ```
 
-Restart `dsh web` afterwards. The panel appears under the composer on every conversation.
+If your profile previously linked a local checkout, replace that dependency with the npm package using the install command above. Restart `dsh web` afterwards. The panel appears under the composer on every conversation.
 
 To uninstall:
 
@@ -107,23 +109,23 @@ chmod +x node_modules/node-pty/prebuilds/*/spawn-helper
 
 Verify with `ls -l node_modules/node-pty/prebuilds/*/spawn-helper` — the mode must start with `rwx`, not `rw-`.
 
-### Colours or escape codes render as raw text
+### Client changes do not appear
 
-Expected. The pane is line-oriented and does not implement escape-sequence rendering. Use it for running commands, not for TUI programs.
+Run `npm run build` after editing `src/client.js`, then refresh the browser.
 
 ## Behaviour and limitations
 
-- **Line-oriented, not a full terminal emulator.** The pane is accurate for ordinary shell use, but it does not implement escape-sequence rendering: colours arrive as raw ANSI codes, full-screen programs (`vim`, `less`, `top`) will not draw correctly. Use it for running commands, not for TUI work.
-- **Settling is time-based.** A command's output is considered finished after 250 ms of silence, or 15 s maximum. A long-running foreground command returns control to the panel while it keeps running; press Enter for a fresh prompt or use **Ctrl+C** to interrupt.
+- **Integrated terminal input.** Click the terminal surface and type at the shell cursor. Enter runs, arrow keys navigate history, Tab completes, and Ctrl+C interrupts. Output is polled every 80 ms for the active tab and every 500 ms for background tabs.
+- **Long-running commands keep updating.** Input is forwarded independently of output, so the terminal remains interactive while a process runs.
 - **Sessions are process-local.** They do not survive a harness restart, and at most 8 panels are held at once — opening a ninth evicts the oldest.
-- **One shell per browser panel.** Reloading the page closes the panel's shell.
+- **One shell per terminal tab.** Closing a tab closes its shell. Reloading the page closes all its terminal shells.
 
 ## How it works
 
 The package ships both halves of a DSH plugin:
 
-- `lib/index.js` — host half. Registers an RPC channel on the Connection carrier (`ctx.connection.rpc.handle`) with `open`, `send`, `read`, `interrupt`, `resize`, and `close` endpoints, and owns every PTY it spawns. All PTYs are killed when the plugin unloads.
-- `lib/client.js` — browser half. Declared through `dsh.client` in `package.json`, served as a plugin bundle, and registered into the `conversation.composer.dock` slot.
+- `lib/index.js` — host half. Registers an RPC channel on the Connection carrier (`ctx.connection.rpc.handle`) with `open`, `write`, `read`, `send`, `interrupt`, `resize`, and `close` endpoints, and owns every PTY it spawns. All PTYs are killed when the plugin unloads.
+- `src/client.js` → `lib/client.js` — browser half with bundled xterm.js and its fit addon. Declared through `dsh.client` in `package.json`, served as a plugin bundle, and registered into the `conversation.composer.dock` slot.
 
 It deliberately does **not** use the harness `ctx.terminals` service: that service is owner-scoped to registered agents, and each operation requires an `Agent` owner, so a human-driven browser panel has nothing to present. Owning the PTY directly keeps the plugin self-contained and avoids creating a throwaway session per panel.
 
@@ -131,10 +133,11 @@ It deliberately does **not** use the harness `ctx.terminals` service: that servi
 
 ```sh
 npm install
-npm run check        # node --check on both halves
+npm run build        # bundle the browser client
+npm run check        # syntax checks
 ```
 
-Both halves are hand-authored ESM-compatible sources — there is no build step. The client half is emitted directly in the `window.__ModuleLoader__` bundle format the DSH shell loads, and takes React from the shell's frozen module table.
+The host source is `lib/index.js`. Edit the browser source in `src/client.js`; `scripts/build-client.mjs` bundles the terminal renderer and CSS into `lib/client.js` in the harness `window.__ModuleLoader__` format. React comes from the harness module table. `npm pack` and `npm publish` build the client automatically.
 
 ## License
 
