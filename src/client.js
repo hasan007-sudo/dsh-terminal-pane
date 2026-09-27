@@ -16,9 +16,9 @@ const CSS = `
   .dtp-footer { display: contents; }
   .dtp-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: #657085; font: inherit; font-size: 12px; cursor: pointer; }
   .dtp-toggle:hover { background: #f5f6f8; }
-  .dtp-toggle:focus-visible, .dtp-resize:focus-visible { outline: 2px solid #717c91; outline-offset: -2px; }
+  .dtp-toggle:focus-visible, .dtp-resize:focus-visible, .dtp-toolbar:focus-visible { outline: 2px solid #717c91; outline-offset: -2px; }
   .dtp-root { flex: 0 0 100%; order: 100; width: 100%; max-width: 1100px; box-sizing: border-box; margin: 8px auto; border: 1px solid #e0e3e9; border-radius: 12px; overflow: hidden; background: #fff; color: #000; }
-  .dtp-toolbar { display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 8px; font-size: 12px; background: #f5f6f8; border-bottom: 1px solid #e0e3e9; }
+  .dtp-toolbar { cursor: pointer; display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 8px; font-size: 12px; background: #f5f6f8; border-bottom: 1px solid #e0e3e9; }
   .dtp-tabs { display: flex; gap: 6px; overflow-x: auto; }
   .dtp-tab { display: flex; align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 9px; color: #586074; }
   .dtp-tab-active { border-color: #e0e3e9; background: #fff; color: #202534; }
@@ -195,7 +195,10 @@ function TerminalPane({ ctx }) {
       onLostPointerCapture: () => { drag.current = null },
       onKeyDown: (event) => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizeHeight(height + (event.key === 'ArrowUp' ? 20 : -20)) } },
     }),
-    h('div', { className: 'dtp-toolbar' },
+    h('div', { className: 'dtp-toolbar', role: 'toolbar', tabIndex: 0, 'aria-label': 'Terminal header; click or press Enter to collapse',
+      onClick: (event) => { if (!event.target.closest('button')) toggle() },
+      onKeyDown: (event) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); toggle() } },
+    },
       h('div', { className: 'dtp-tabs', role: 'tablist', 'aria-label': 'Terminals' },
         ...tabs.map((tab) => h('div', { key: tab.id, className: `dtp-tab${selected === tab.id ? ' dtp-tab-active' : ''}` },
           h('button', { className: 'dtp-tab-label', role: 'tab', 'aria-selected': selected === tab.id, onClick: () => setSelected(tab.id) },
