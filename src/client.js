@@ -8,7 +8,7 @@ const h = React.createElement
 const CHANNEL = '/dsh-terminal-pane'
 const STYLE_ID = 'dsh-terminal-pane-style'
 const CSS = `
-  :has(> [data-composer-card]):has(.dtp-footer) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; }
+  :has(> [data-composer-card]):has(.dtp-footer) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; width: 100%; max-width: calc(var(--dsh-composer-card-max-width) + 2 * var(--dsh-composer-side-clearance, 0px)); box-sizing: border-box; margin-inline: auto; }
   :has(> [data-composer-card]):has(.dtp-footer) > [data-composer-card] { grid-column: 1 / -1; justify-self: center; width: 100%; box-sizing: border-box; }
   :has(> [data-composer-card]):has(.dtp-footer) [data-composer-stats] { grid-column: 2; grid-row: 2; width: auto; margin: 0; justify-self: center; }
   :has(> [data-composer-card]):has(.dtp-footer) .dtp-toggle { grid-column: 1; grid-row: 2; }
