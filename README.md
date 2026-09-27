@@ -1,5 +1,9 @@
 # dsh-terminal-pane
 
+[![npm version](https://img.shields.io/npm/v/dsh-terminal-pane)](https://www.npmjs.com/package/dsh-terminal-pane)
+
+[View on npm](https://www.npmjs.com/package/dsh-terminal-pane)
+
 An inline terminal panel docked under the composer of the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) web GUI — a real PTY running on the machine that hosts the harness, driven from the browser tab.
 
 > ⚠️ **Read the security section before you install this on a shared or remotely reachable host.**
