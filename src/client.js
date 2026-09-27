@@ -8,22 +8,30 @@ const h = React.createElement
 const CHANNEL = '/dsh-terminal-pane'
 const STYLE_ID = 'dsh-terminal-pane-style'
 const CSS = `
-  .dtp-root { width: 100%; max-width: 1100px; box-sizing: border-box; margin: 8px auto; border: 1px solid #e0e3e9; border-radius: 12px; overflow: hidden; background: #fff; color: #000; }
+  :has(> [data-composer-card]):has(.dtp-footer) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; }
+  :has(> [data-composer-card]):has(.dtp-footer) > [data-composer-card] { grid-column: 1 / -1; width: 100%; box-sizing: border-box; }
+  :has(> [data-composer-card]):has(.dtp-footer) [data-composer-stats] { grid-column: 2; grid-row: 2; width: auto; margin: 0; justify-self: center; }
+  :has(> [data-composer-card]):has(.dtp-footer) .dtp-toggle { grid-column: 1; grid-row: 2; }
+  :has(> [data-composer-card]):has(.dtp-footer) .dtp-root { grid-column: 1 / -1; grid-row: 3; }
+  .dtp-footer { display: contents; }
+  .dtp-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: #657085; font: inherit; font-size: 12px; cursor: pointer; }
+  .dtp-toggle:hover { background: #f5f6f8; }
+  .dtp-toggle:focus-visible, .dtp-resize:focus-visible { outline: 2px solid #717c91; outline-offset: -2px; }
+  .dtp-root { flex: 0 0 100%; order: 100; width: 100%; max-width: 1100px; box-sizing: border-box; margin: 8px auto; border: 1px solid #e0e3e9; border-radius: 12px; overflow: hidden; background: #fff; color: #000; }
   .dtp-toolbar { display: flex; align-items: center; gap: 6px; min-height: 42px; padding: 5px 8px; background: #f5f6f8; border-bottom: 1px solid #e0e3e9; }
-  .dtp-toolbar-collapsed { min-height: 32px; height: 32px; padding: 0 8px; box-sizing: border-box; border-bottom: 0; }
-  .dtp-toolbar-collapsed .dtp-action { height: 28px; }
   .dtp-tabs { display: flex; gap: 6px; overflow-x: auto; }
   .dtp-tab { display: flex; align-items: center; gap: 16px; border: 1px solid transparent; border-radius: 9px; color: #586074; }
   .dtp-tab-active { border-color: #e0e3e9; background: #fff; color: #202534; }
   .dtp-tab button, .dtp-action { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; }
   .dtp-tab-label { display: flex; align-items: center; gap: 8px; padding: 7px 10px; white-space: nowrap; font-size: 13px; }
   .dtp-close { padding: 6px 10px 6px 0; font-size: 18px; color: #7d8594 !important; }
-  .dtp-action { width: 30px; height: 30px; border-radius: 6px; color: #657085; font-size: 20px; }
+  .dtp-action { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; line-height: 1; width: 30px; height: 30px; border-radius: 6px; color: #657085; font-size: 20px; }
   .dtp-action:hover { background: #e7eaf0; }
   .dtp-action:focus-visible, .dtp-tab button:focus-visible { outline: 2px solid #717c91; outline-offset: -2px; }
   .dtp-spacer { flex: 1; }
-  .dtp-collapsed { font-size: 13px; padding: 6px; width: auto; }
-  .dtp-screen { height: 320px; min-height: 320px; padding: 12px 14px; box-sizing: border-box; background: #fff; }
+  .dtp-resize { display: flex; align-items: center; justify-content: center; height: 10px; cursor: ns-resize; touch-action: none; background: #f5f6f8; }
+  .dtp-resize::after { content: ' '; width: 36px; height: 3px; border-radius: 2px; background: #c6cbd4; }
+  .dtp-screen { min-height: 120px; padding: 12px 14px; box-sizing: border-box; background: #fff; }
   .dtp-screen .xterm { height: 100%; }
   .dtp-screen .xterm .scrollbar .slider { border-radius: 2px; }
   .dtp-error { padding: 8px 14px; color: #b42318; font-size: 12px; background: #fff; }
@@ -37,7 +45,7 @@ async function rpc(ctx, endpoint, payload) {
 }
 
 /** Own one emulator and PTY; relay raw input and incremental output. */
-function TerminalView({ ctx, tab, active, rename }) {
+function TerminalView({ ctx, tab, active, rename, height }) {
   const container = useRef(null)
   const terminal = useRef(null)
   const fitRef = useRef(null)
@@ -139,7 +147,7 @@ function TerminalView({ ctx, tab, active, rename }) {
 
   return h('div', { style: { display: active ? 'block' : 'none' } },
     error ? h('div', { className: 'dtp-error', role: 'alert' }, error) : null,
-    h('div', { className: 'dtp-screen', ref: container, 'aria-label': `${tab.title} terminal` }),
+    h('div', { className: 'dtp-screen', style: { height }, ref: container, 'aria-label': `${tab.title} terminal` }),
   )
 }
 
@@ -148,6 +156,10 @@ function TerminalPane({ ctx }) {
   const [open, setOpen] = useState(false)
   const [tabs, setTabs] = useState([])
   const [selected, setSelected] = useState(null)
+  const [height, setHeight] = useState(320)
+  const drag = useRef(null)
+  const maxHeight = Math.max(120, Math.floor(window.innerHeight * 0.6))
+  const resizeHeight = (value) => setHeight(Math.min(maxHeight, Math.max(120, Math.round(value))))
   const rename = useCallback((id, title) => {
     setTabs((current) => current.map((tab) => tab.id === id ? { ...tab, title } : tab))
   }, [])
@@ -169,9 +181,22 @@ function TerminalPane({ ctx }) {
     else setOpen((value) => !value)
   }
 
-  return h('div', { className: 'dtp-root' },
-    h('div', { className: `dtp-toolbar${open ? '' : ' dtp-toolbar-collapsed'}` },
-      open ? h('div', { className: 'dtp-tabs', role: 'tablist', 'aria-label': 'Terminals' },
+  const chevron = h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+    h('path', { d: open ? 'm6 9 6 6 6-6' : 'm6 15 6-6 6 6' }),
+  )
+  return h('div', { className: 'dtp-footer' },
+    h('button', { className: 'dtp-toggle', 'aria-expanded': open, onClick: toggle }, 'Terminal', chevron),
+    h('div', { className: 'dtp-root', style: { display: open ? undefined : 'none' } },
+    h('div', { className: 'dtp-resize', role: 'separator', tabIndex: 0, 'aria-label': 'Resize terminal height', 'aria-orientation': 'horizontal', 'aria-valuemin': 120, 'aria-valuemax': maxHeight, 'aria-valuenow': height,
+      onPointerDown: (event) => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); drag.current = { y: event.clientY, height } },
+      onPointerMove: (event) => { if (drag.current) resizeHeight(drag.current.height + drag.current.y - event.clientY) },
+      onPointerUp: () => { drag.current = null },
+      onPointerCancel: () => { drag.current = null },
+      onLostPointerCapture: () => { drag.current = null },
+      onKeyDown: (event) => { if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizeHeight(height + (event.key === 'ArrowUp' ? 20 : -20)) } },
+    }),
+    h('div', { className: 'dtp-toolbar' },
+      h('div', { className: 'dtp-tabs', role: 'tablist', 'aria-label': 'Terminals' },
         ...tabs.map((tab) => h('div', { key: tab.id, className: `dtp-tab${selected === tab.id ? ' dtp-tab-active' : ''}` },
           h('button', { className: 'dtp-tab-label', role: 'tab', 'aria-selected': selected === tab.id, onClick: () => setSelected(tab.id) },
             h('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
@@ -180,12 +205,13 @@ function TerminalPane({ ctx }) {
             ), tab.title),
           h('button', { className: 'dtp-close', 'aria-label': `Close ${tab.title} terminal`, onClick: () => close(tab.id) }, '×'),
         )),
-      ) : h('button', { className: 'dtp-action dtp-collapsed', onClick: toggle }, 'Terminal'),
+      ),
       h('button', { className: 'dtp-action', 'aria-label': 'New terminal', onClick: add, disabled: tabs.length >= 8 }, '+'),
       h('span', { className: 'dtp-spacer' }),
-      h('button', { className: 'dtp-action', 'aria-label': open ? 'Collapse terminal' : 'Expand terminal', 'aria-expanded': open, onClick: toggle }, open ? '⌄' : '⌃'),
+      h('button', { className: 'dtp-action', 'aria-label': open ? 'Collapse terminal' : 'Expand terminal', 'aria-expanded': open, onClick: toggle }, chevron),
     ),
-    ...tabs.map((tab) => h(TerminalView, { key: tab.id, ctx, tab, active: open && selected === tab.id, rename })),
+    ...tabs.map((tab) => h(TerminalView, { key: tab.id, ctx, tab, active: open && selected === tab.id, rename, height })),
+    ),
   )
 }
 
@@ -200,7 +226,7 @@ export default {
     }
     ctx.slots.inject('conversation.composer.dock', () =>
       ctx.slots.register(
-        { name: 'conversation.composer.dock', id: 'terminal-pane', order: 10 },
+        { name: 'conversation.composer.dock', id: 'terminal-pane', order: -10 },
         (props) => h(TerminalPane, { ...props, ctx }),
       ),
     )

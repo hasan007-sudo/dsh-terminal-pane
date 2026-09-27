@@ -6,12 +6,13 @@ An inline terminal panel docked under the composer of the [DeepSeek Harness](htt
 
 ## What it does
 
-- Adds a collapsible **Terminal** panel directly under the message composer, so the shell sits in the same surface as the conversation instead of in a separate app.
+- Adds a compact **Terminal** toggle beside the usage indicators under the message composer, so the shell sits in the same surface as the conversation instead of in a separate app.
 - Backs the panel with a genuine PTY (`node-pty`) spawned by the plugin — full TTY behaviour: colours, `vim`, `top`, job control, `Ctrl+C`.
 - Sessions are **persistent across commands**: `cd`, exported variables, and background processes survive between inputs, exactly like a normal terminal.
 - The shell is **lazy**: nothing spawns until you first expand the panel.
 - Renders the PTY with xterm.js: type directly at the shell cursor, with ANSI colours, command history, tab completion, and terminal screen controls.
 - Includes terminal tabs with add, close, and collapse controls.
+- Drag the grip at the top of the open panel to adjust its height. Focus the grip and use Up/Down to resize with the keyboard; height ranges from 120px to 60% of the browser height.
 
 ```
 ┌──────────────────────────────────────────┐
