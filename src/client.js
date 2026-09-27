@@ -10,6 +10,8 @@ const STYLE_ID = 'dsh-terminal-pane-style'
 const CSS = `
   .dtp-root { width: 100%; max-width: 1100px; box-sizing: border-box; margin: 8px auto; border: 1px solid #e0e3e9; border-radius: 12px; overflow: hidden; background: #fff; color: #000; }
   .dtp-toolbar { display: flex; align-items: center; gap: 6px; min-height: 42px; padding: 5px 8px; background: #f5f6f8; border-bottom: 1px solid #e0e3e9; }
+  .dtp-toolbar-collapsed { min-height: 32px; height: 32px; padding: 0 8px; box-sizing: border-box; border-bottom: 0; }
+  .dtp-toolbar-collapsed .dtp-action { height: 28px; }
   .dtp-tabs { display: flex; gap: 6px; overflow-x: auto; }
   .dtp-tab { display: flex; align-items: center; gap: 16px; border: 1px solid transparent; border-radius: 9px; color: #586074; }
   .dtp-tab-active { border-color: #e0e3e9; background: #fff; color: #202534; }
@@ -168,7 +170,7 @@ function TerminalPane({ ctx }) {
   }
 
   return h('div', { className: 'dtp-root' },
-    h('div', { className: 'dtp-toolbar' },
+    h('div', { className: `dtp-toolbar${open ? '' : ' dtp-toolbar-collapsed'}` },
       open ? h('div', { className: 'dtp-tabs', role: 'tablist', 'aria-label': 'Terminals' },
         ...tabs.map((tab) => h('div', { key: tab.id, className: `dtp-tab${selected === tab.id ? ' dtp-tab-active' : ''}` },
           h('button', { className: 'dtp-tab-label', role: 'tab', 'aria-selected': selected === tab.id, onClick: () => setSelected(tab.id) },
