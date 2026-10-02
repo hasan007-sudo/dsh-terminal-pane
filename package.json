@@ -1,6 +1,6 @@
 {
   "name": "dsh-terminal-pane",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Inline terminal panel docked under the DeepSeek Harness web composer, backed by a real PTY on the host",
   "keywords": [
     "deepseek-harness",

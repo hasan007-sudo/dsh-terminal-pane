@@ -49,12 +49,12 @@ Do not install this on a host whose browser session is reachable by untrusted pa
 
 Use the published [npm package](https://www.npmjs.com/package/dsh-terminal-pane) for normal installation. A local checkout or filesystem link is only needed for development.
 
-From the DSH **Plugins** page: click **Add plugin**, enter `dsh-terminal-pane@0.1.1`, install, then enable it.
+From the DSH **Plugins** page: click **Add plugin**, enter `dsh-terminal-pane@0.1.2`, install, then enable it.
 
 Or from the command line:
 
 ```sh
-dsh plugin --profile web add dsh-terminal-pane@0.1.1
+dsh plugin --profile web add dsh-terminal-pane@0.1.2
 ```
 
 If your profile previously linked a local checkout, replace that dependency with the npm package using the install command above. Restart `dsh web` afterwards. The panel appears under the composer on every conversation.
